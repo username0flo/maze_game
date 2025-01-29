@@ -1,6 +1,6 @@
 from graphics import *
 import random as rd
-
+from time import sleep
 # definition des fonction du jeu:
 
 def init_grille(joueur):
@@ -137,6 +137,7 @@ def gerer_items(grille,liste_item,inventaire,joueur,evenements):
             liste_item.pop(index)
             inventaire[BOMBE-1] +=1
     elif (touche == 'a'):
+        sleep(0.1)
         if inventaire[BOMBE-1]:
             print("bombe placee")
             poser_bombe(grille,joueur)
