@@ -164,7 +164,7 @@ def bouger_joueur(grille,src_pos,dest_pos):
     idest, jdest = dest_pos
     if not(dans_intervalle(idest,0,NB_CASES-1) and dans_intervalle(jdest,0,NB_CASES-1)):
         return src_pos
-    if abs(idest - isrc) > 1 or abs(jdest - jsrc) >1: # pas necessaire
+    if abs(idest - isrc) and abs(jdest - jsrc): # evite les touches pressees en meme temps
         return src_pos
     if grille[idest][jdest]:
         return src_pos
@@ -173,7 +173,7 @@ def bouger_joueur(grille,src_pos,dest_pos):
 
 
 
-def affiche_jeu(grille,joueur,arrivee,jeu_termine,liste_item,bouton):
+def affiche_jeu(grille,joueur,arrivee,jeu_termine,liste_item,bouton,noms_images):
     remplir_fenetre(blanc)
     if(jeu_termine):
         texte, espacement, rect = bouton
@@ -182,27 +182,40 @@ def affiche_jeu(grille,joueur,arrivee,jeu_termine,liste_item,bouton):
         affiche_rectangle((x, y), (x + largeur, y + hauteur), noir)
         affiche_texte(texte, (x + espacement, y + espacement), noir)
     else:
-        dessine_grille(grille)
+        nom_mur,nom_arrivee,nom_joueur = noms_images
+        dessine_grille(grille,nom_mur)
         for item in liste_item:
             type_item,coord = item
             item_i,item_j = coord
             dessine_cercle_centre(item_i,item_j,noir)
 
         joueur_i, joueur_j = joueur
-        dessine_cercle_centre(joueur_i,joueur_j,rouge)
+        if(nom_joueur):
+            x,y = grille2fenetre(joueur_i,joueur_j)
+            dessine_image(nom_joueur,x,y)
+        else:
+            dessine_cercle_centre(joueur_i,joueur_j,rouge)
 
         arrivee_i, arivee_j = arrivee
-        dessine_cercle_centre(arrivee_i,arivee_j,vert)
+        if(nom_arrivee):
+            x,y = grille2fenetre(arrivee_i,arivee_j)
+            dessine_image(nom_arrivee,x,y)
+        else:
+            dessine_cercle_centre(arrivee_i,arivee_j,rouge)
+    
+
+    
 
 
     affiche_tout()
 
-def dessine_grille(grille):
+def dessine_grille(grille,image):
     for i in range(NB_CASES):
         for j in range(NB_CASES):
             if grille[i][j]:
                 x,y = grille2fenetre(i,j)
-                affiche_rectangle_plein((x,y),(x +TAILLE_CASE, y +TAILLE_CASE),noir)
+                if not(dessine_image(image,x,y)):
+                    affiche_rectangle_plein((x,y),(x +TAILLE_CASE, y +TAILLE_CASE),noir)
 
 def dessine_cercle_centre(i,j,couleur):
     x, y = grille2fenetre(i,j)
@@ -225,7 +238,22 @@ def gen_bouton(text, espacement):
     hauteur, largeur = hauteur_texte(text, 20), largeur_texte(text, 20)
     return (text,espacement,(5, 5, largeur + (2*espacement), hauteur + (2*espacement)))
 
+def charger_sprites(nom_mur,nom_arrivee,nom_joueur):
+    if nom_mur:
+        charge_image(nom_mur)
+        modifie_taille_image(nom_mur,TAILLE_CASE,TAILLE_CASE)
+    if nom_arrivee:
+        charge_image(nom_arrivee)
+        modifie_taille_image(nom_arrivee,TAILLE_CASE,TAILLE_CASE)
+    if nom_joueur:
+        charge_image(nom_joueur)
+        modifie_taille_image(nom_joueur,TAILLE_CASE,TAILLE_CASE)
 
+def dessine_image(image,x,y):
+    if image:
+        affiche_image(image,(x,y))
+        return 1
+    return 0
 
 TAILLE_FENETRE = 600
 NB_CASES = 20
@@ -239,6 +267,16 @@ BOMBE = 1
 
 init_fenetre(TAILLE_FENETRE,TAILLE_FENETRE,"labyrinthe")
 affiche_auto_off()
+
+# noms images
+img_mur = "images/mur.png"
+img_arrivee = "images/arrivee.png"
+img_joueur = "images/joueur.png"
+
+charger_sprites(img_mur,img_arrivee,img_joueur)
+
+images = (img_mur,img_arrivee,img_joueur)
+
 joueur = creer_joueur()
 grille = init_grille(joueur)
 arrivee = gen_arrivee(grille)
@@ -247,7 +285,7 @@ liste_items = generer_item(grille,3,arrivee)
 evenements = ('',(0,0),(0,0))
 inventaire = [0]
 JEU_TERMINE = False
-affiche_jeu(grille,joueur,arrivee,JEU_TERMINE,liste_items,bouton)
+affiche_jeu(grille,joueur,arrivee,JEU_TERMINE,liste_items,bouton,images)
 
 
 while pas_echap():
@@ -257,4 +295,4 @@ while pas_echap():
         case = recuperer_case(joueur,evenements)
         joueur = bouger_joueur(grille,joueur,case)
         gerer_items(grille,liste_items,inventaire,joueur,evenements)
-    affiche_jeu(grille,joueur,arrivee,JEU_TERMINE,liste_items,bouton)
+    affiche_jeu(grille,joueur,arrivee,JEU_TERMINE,liste_items,bouton,images)
