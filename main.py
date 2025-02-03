@@ -182,12 +182,16 @@ def affiche_jeu(grille,joueur,arrivee,jeu_termine,liste_item,bouton,noms_images)
         affiche_rectangle((x, y), (x + largeur, y + hauteur), noir)
         affiche_texte(texte, (x + espacement, y + espacement), noir)
     else:
-        nom_mur,nom_arrivee,nom_joueur = noms_images
+        nom_mur,nom_arrivee,nom_joueur,nom_bombe = noms_images
         dessine_grille(grille,nom_mur)
         for item in liste_item:
             type_item,coord = item
             item_i,item_j = coord
-            dessine_cercle_centre(item_i,item_j,noir)
+            if(nom_bombe):
+                x,y = grille2fenetre(item_i,item_j)
+                dessine_image(nom_bombe,x,y)
+            else:
+                dessine_cercle_centre(item_i,item_j,noir)
 
         joueur_i, joueur_j = joueur
         if(nom_joueur):
@@ -238,16 +242,19 @@ def gen_bouton(text, espacement):
     hauteur, largeur = hauteur_texte(text, 20), largeur_texte(text, 20)
     return (text,espacement,(5, 5, largeur + (2*espacement), hauteur + (2*espacement)))
 
-def charger_sprites(nom_mur,nom_arrivee,nom_joueur):
+def charger_sprites(nom_mur,nom_arrivee,nom_joueur,nom_bombe):
     if nom_mur:
         charge_image(nom_mur)
-        modifie_taille_image(nom_mur,TAILLE_CASE,TAILLE_CASE)
+        modifie_taille_image(nom_mur,TAILLE_CASE-1,TAILLE_CASE)
     if nom_arrivee:
         charge_image(nom_arrivee)
         modifie_taille_image(nom_arrivee,TAILLE_CASE,TAILLE_CASE)
     if nom_joueur:
         charge_image(nom_joueur)
         modifie_taille_image(nom_joueur,TAILLE_CASE,TAILLE_CASE)
+    if nom_bombe:
+        charge_image(nom_bombe)
+        modifie_taille_image(nom_bombe,TAILLE_CASE,TAILLE_CASE)
 
 def dessine_image(image,x,y):
     if image:
@@ -272,10 +279,11 @@ affiche_auto_off()
 img_mur = "images/mur.png"
 img_arrivee = "images/arrivee.png"
 img_joueur = "images/joueur.png"
+img_bombe = "images/bombe.png"
 
-charger_sprites(img_mur,img_arrivee,img_joueur)
+charger_sprites(img_mur,img_arrivee,img_joueur,img_bombe)
 
-images = (img_mur,img_arrivee,img_joueur)
+images = (img_mur,img_arrivee,img_joueur,img_bombe)
 
 joueur = creer_joueur()
 grille = init_grille(joueur)
@@ -296,3 +304,4 @@ while pas_echap():
         joueur = bouger_joueur(grille,joueur,case)
         gerer_items(grille,liste_items,inventaire,joueur,evenements)
     affiche_jeu(grille,joueur,arrivee,JEU_TERMINE,liste_items,bouton,images)
+    

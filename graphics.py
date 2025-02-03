@@ -254,7 +254,7 @@ __images = dict()
 def charge_image(nom_image):
     global __images_original,__images
     """ charge une image en mémoire """
-    __images_original[nom_image] = pygame.image.load(nom_image).convert()
+    __images_original[nom_image] = pygame.image.load(nom_image).convert_alpha()
     __images[nom_image] = __images_original[nom_image]
 
 def modifie_transparence(nom_image,couleur_transparente=None,alpha=100):
