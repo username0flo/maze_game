@@ -180,7 +180,7 @@ def affiche_jeu(grille,joueur,arrivee,jeu_termine,liste_item,bouton,noms_images)
         x, y, largeur, hauteur = rect
         affiche_texte_centre("gagné !!!",(TAILLE_FENETRE//2,TAILLE_FENETRE//2),noir,50)
         affiche_rectangle((x, y), (x + largeur, y + hauteur), noir)
-        affiche_texte(texte, (x + espacement, y + espacement), noir)
+        affiche_texte(texte, (x + espacement, y + espacement), noir, TAILLE_POLICE_BOUTON)
     else:
         nom_mur,nom_arrivee,nom_joueur,nom_bombe = noms_images
         dessine_grille(grille,nom_mur)
@@ -239,13 +239,20 @@ def gen_arrivee(grille):
 
 
 def gen_bouton(text, espacement):
-    hauteur, largeur = hauteur_texte(text, 20), largeur_texte(text, 20)
+    hauteur, largeur = hauteur_texte(text, TAILLE_POLICE_BOUTON), largeur_texte(text, TAILLE_POLICE_BOUTON)
     return (text,espacement,(5, 5, largeur + (2*espacement), hauteur + (2*espacement)))
+
+def bouton_clique(bouton,evenements):
+    touche,fleche,clic = evenements
+    if clic:
+        texte,espacement,(x,y,w,h) = bouton
+        clic_x,clic_y = clic
+        return x <= clic_x and x+w >= clic_x and y <= clic_y and y+h >= clic_y
 
 def charger_sprites(nom_mur,nom_arrivee,nom_joueur,nom_bombe):
     if nom_mur:
         charge_image(nom_mur)
-        modifie_taille_image(nom_mur,TAILLE_CASE-1,TAILLE_CASE)
+        modifie_taille_image(nom_mur,TAILLE_CASE,TAILLE_CASE)
     if nom_arrivee:
         charge_image(nom_arrivee)
         modifie_taille_image(nom_arrivee,TAILLE_CASE,TAILLE_CASE)
@@ -262,6 +269,18 @@ def dessine_image(image,x,y):
         return 1
     return 0
 
+
+def init():
+    global joueur,grille,arrivee,liste_items,evenements,inventaire,JEU_TERMINE
+    joueur = creer_joueur()
+    grille = init_grille(joueur)
+    arrivee = gen_arrivee(grille)
+    liste_items = generer_item(grille,3,arrivee)
+    evenements = ('',(0,0),(0,0))
+    inventaire = [0]
+    JEU_TERMINE = False
+    affiche_jeu(grille,joueur,arrivee,JEU_TERMINE,liste_items,bouton,images)
+
 TAILLE_FENETRE = 600
 NB_CASES = 20
 
@@ -270,6 +289,8 @@ TAILLE_DEMI_CASE = TAILLE_CASE//2
 
 # types items
 BOMBE = 1
+
+TAILLE_POLICE_BOUTON = 20
 
 
 init_fenetre(TAILLE_FENETRE,TAILLE_FENETRE,"labyrinthe")
@@ -285,15 +306,10 @@ charger_sprites(img_mur,img_arrivee,img_joueur,img_bombe)
 
 images = (img_mur,img_arrivee,img_joueur,img_bombe)
 
-joueur = creer_joueur()
-grille = init_grille(joueur)
-arrivee = gen_arrivee(grille)
+
 bouton = gen_bouton("Recommencer", 5)
-liste_items = generer_item(grille,3,arrivee)
-evenements = ('',(0,0),(0,0))
-inventaire = [0]
-JEU_TERMINE = False
-affiche_jeu(grille,joueur,arrivee,JEU_TERMINE,liste_items,bouton,images)
+
+init()
 
 
 while pas_echap():
@@ -303,5 +319,8 @@ while pas_echap():
         case = recuperer_case(joueur,evenements)
         joueur = bouger_joueur(grille,joueur,case)
         gerer_items(grille,liste_items,inventaire,joueur,evenements)
+    else: 
+        if(bouton_clique(bouton,evenements)):
+            init()
     affiche_jeu(grille,joueur,arrivee,JEU_TERMINE,liste_items,bouton,images)
     
