@@ -1,12 +1,18 @@
 from graphics import *
 import random as rd
 from time import sleep
+
+
+# Remi Bergon, Florent Rodet
+
 # definition des fonction du jeu:
 
 def init_grille(joueur):
-    return algo_prim(joueur)
+    # return algo_1(joueur)
+    return algo_2(joueur)
 
-def algo_prim(joueur):
+# algorithme de Prim
+def algo_1(joueur):
     # initialise la grille: (0 = case_vide, 1 = mur)
     grille = []
     for i in range(NB_CASES):
@@ -23,6 +29,29 @@ def algo_prim(joueur):
             grille[i][j] = 0
             ajouter_murs(murs,grille,i,j)
         murs.pop(index)
+
+    return grille
+
+# algo parcours en profondeur (deep search)
+def algo_2(joueur):
+    # initialise la grille: (0 = case_vide, 1 = mur)
+    grille = []
+    for i in range(NB_CASES):
+        grille.append([1]*NB_CASES)
+    i,j =joueur
+    grille[i][j] = 0
+    stack = [(i,j)]
+    while len(stack):
+        voisins = voisins_libre(grille, stack[-1])
+        while not len(voisins):
+            stack.pop()
+            if not(len(stack)):
+                return grille
+            voisins = voisins_libre(grille, stack[-1])
+        case = rd.choice(voisins)
+        i,j = case
+        grille[i][j] = 0
+        stack.append(case)
 
     return grille
 
@@ -48,27 +77,46 @@ def nb_voisins(mur,grille):
     nbre_voisins = 0
     for i in range(x-1,x+2):
         if(not(dans_intervalle(i,0,NB_CASES-1))):
-                continue
+            continue
         if(not(grille[i][y])):
             nbre_voisins += 1
     
     for j in range(y-1,y+2):
         if(not(dans_intervalle(j,0,NB_CASES-1))):
-                continue
+            continue
         if(not(grille[x][j])):
             nbre_voisins += 1
     return nbre_voisins
+
+def voisins_libre(grille, case):
+    x,y = case
+    voisins = []
+    for i in range(x-1,x+2):
+        if(not(dans_intervalle(i,0,NB_CASES-1))):
+                continue
+        if(grille[i][y]):
+            if(nb_voisins((i,y),grille) == 1):
+                voisins.append((i,y))
+
+    
+    for j in range(y-1,y+2):
+        if(not(dans_intervalle(j,0,NB_CASES-1))):
+                continue
+        if(grille[x][j]):
+            if(nb_voisins((x,j),grille) == 1):
+                voisins.append((x,j))
+    return voisins
 
 def recuperer_voisins(grille,case):
     voisins = []
     x,y = case
     for i in range(x-1,x+2):
-        if(not(dans_intervalle(i,0,NB_CASES-1))):
+        if(not(dans_intervalle(i,0,NB_CASES-1)) or not grille[i][y]):
             continue
         voisins.append((i,y))
     
     for j in range(y-1,y+2):
-        if(not(dans_intervalle(j,0,NB_CASES-1))):
+        if(not(dans_intervalle(j,0,NB_CASES-1)) or not grille[x][j]):
                 continue
         voisins.append((x,j))
     return voisins
@@ -76,36 +124,22 @@ def recuperer_voisins(grille,case):
 
 
 def dans_intervalle(val,mini,maxi):
-    if(val < mini or val > maxi):
-        return False
-    return True
-''' grille :
-[
-                [0,1,1,1,1,0,1,1,1,1],
-                [0,1,1,0,0,0,0,0,0,1],
-                [0,0,0,0,1,0,1,1,0,1],
-                [1,1,1,1,0,0,1,1,0,1],
-                [0,0,0,0,0,1,1,1,0,0],
-                [0,1,1,0,0,1,0,0,0,0],
-                [0,1,1,0,1,1,0,1,1,0],
-                [0,1,0,0,1,0,0,1,1,0],
-                [0,1,1,1,1,1,1,1,1,1],
-                [0,0,0,0,0,0,0,0,0,0]
-            ]
-'''
+    return not(val < mini or val > maxi)
+
+
 def jeu_fini(arrivee, joueur):
     arvee_i, arvee_j = arrivee
     joueur_i, joueur_j = joueur
     return (arvee_i == joueur_i) and (arvee_j == joueur_j)
 
 
-def generer_item(grille,nb_item,arrivee):
+def generer_item(grille,nb_item,arrivee,joueur):
     item_liste = []
     for _ in range(nb_item):
         i,j = rd.randint(0,NB_CASES-1),rd.randint(0,NB_CASES-1)
-        while grille[i][j] or (i,j) in item_liste or ((i,j) == (0,0)) or ((i,j) == arrivee):
+        while grille[i][j] or (i,j) in item_liste or ((i,j) == joueur) or ((i,j) == arrivee):
             i,j = rd.randint(0,NB_CASES-1),rd.randint(0,NB_CASES-1)
-        item_liste.append((BOMBE,(i,j)))
+        item_liste.append((i,j))
     return item_liste
 
 
@@ -128,20 +162,21 @@ def recuperer_case(joueur,evenements):
     jou_i, jou_j = joueur
     return jou_i + x, jou_j + y
 
-def gerer_items(grille,liste_item,inventaire,joueur,evenements):
+def gerer_items(grille,liste_item,joueur,evenements):
+    global nb_bombes
     touche, fleches, clic = evenements
     if(touche == 'e'):
-        if((1,joueur) in liste_item):
+        if(joueur in liste_item):
             print("bombe trouvee")
-            index = index_valeur(liste_item,(1,joueur))
+            index = liste_item.index(joueur)
             liste_item.pop(index)
-            inventaire[BOMBE-1] +=1
+            nb_bombes +=1
     elif (touche == 'a'):
-        sleep(0.1)
-        if inventaire[BOMBE-1]:
+        if nb_bombes:
             print("bombe placee")
             poser_bombe(grille,joueur)
-            inventaire[BOMBE-1] -=1
+            nb_bombes -=1
+            sleep(0.1)
 
 def poser_bombe(grille,joueur):
     voisins = recuperer_voisins(grille,joueur)
@@ -149,12 +184,6 @@ def poser_bombe(grille,joueur):
         i,j = voisin
         grille[i][j] = 0
 
-        
-def index_valeur(liste,val):
-    for i,valeur in enumerate(liste):
-        if(val == valeur):
-            return i
-    return -1
 
 def creer_joueur():
     return (0,0)
@@ -164,7 +193,7 @@ def bouger_joueur(grille,src_pos,dest_pos):
     idest, jdest = dest_pos
     if not(dans_intervalle(idest,0,NB_CASES-1) and dans_intervalle(jdest,0,NB_CASES-1)):
         return src_pos
-    if abs(idest - isrc) and abs(jdest - jsrc): # evite les touches pressees en meme temps
+    if (idest - isrc) and (jdest - jsrc): # evite les touches pressees en meme temps
         return src_pos
     if grille[idest][jdest]:
         return src_pos
@@ -185,7 +214,7 @@ def affiche_jeu(grille,joueur,arrivee,jeu_termine,liste_item,bouton,noms_images)
         nom_mur,nom_arrivee,nom_joueur,nom_bombe = noms_images
         dessine_grille(grille,nom_mur)
         for item in liste_item:
-            type_item,coord = item
+            coord = item
             item_i,item_j = coord
             if(nom_bombe):
                 x,y = grille2fenetre(item_i,item_j)
@@ -207,11 +236,8 @@ def affiche_jeu(grille,joueur,arrivee,jeu_termine,liste_item,bouton,noms_images)
         else:
             dessine_cercle_centre(arrivee_i,arivee_j,rouge)
     
-
-    
-
-
     affiche_tout()
+
 
 def dessine_grille(grille,image):
     for i in range(NB_CASES):
@@ -219,7 +245,7 @@ def dessine_grille(grille,image):
             if grille[i][j]:
                 x,y = grille2fenetre(i,j)
                 if not(dessine_image(image,x,y)):
-                    affiche_rectangle_plein((x,y),(x +TAILLE_CASE, y +TAILLE_CASE),noir)
+                    affiche_rectangle_plein((x,y),(x +TAILLE_CASE, y + TAILLE_CASE),noir)
 
 def dessine_cercle_centre(i,j,couleur):
     x, y = grille2fenetre(i,j)
@@ -232,7 +258,7 @@ def grille2fenetre(i,j):
 
 def gen_arrivee(grille):
     i, j = NB_CASES - 1, NB_CASES - 1
-    while grille[i][j] == 1:
+    while grille[i][j]:
         j -= 1
 
     return (i, j)
@@ -247,7 +273,7 @@ def bouton_clique(bouton,evenements):
     if clic:
         texte,espacement,(x,y,w,h) = bouton
         clic_x,clic_y = clic
-        return x <= clic_x and x+w >= clic_x and y <= clic_y and y+h >= clic_y
+        return (x <= clic_x) and (x + w >= clic_x) and (y <= clic_y) and (y + h >= clic_y) # collision clic et bouton
 
 def charger_sprites(nom_mur,nom_arrivee,nom_joueur,nom_bombe):
     if nom_mur:
@@ -271,13 +297,13 @@ def dessine_image(image,x,y):
 
 
 def init():
-    global joueur,grille,arrivee,liste_items,evenements,inventaire,JEU_TERMINE
+    global joueur,grille,arrivee,liste_items,evenements,nb_bombes,JEU_TERMINE
     joueur = creer_joueur()
     grille = init_grille(joueur)
     arrivee = gen_arrivee(grille)
-    liste_items = generer_item(grille,3,arrivee)
+    liste_items = generer_item(grille,3,arrivee,joueur)
     evenements = ('',(0,0),(0,0))
-    inventaire = [0]
+    nb_bombes = 0
     JEU_TERMINE = False
     affiche_jeu(grille,joueur,arrivee,JEU_TERMINE,liste_items,bouton,images)
 
@@ -307,20 +333,19 @@ charger_sprites(img_mur,img_arrivee,img_joueur,img_bombe)
 images = (img_mur,img_arrivee,img_joueur,img_bombe)
 
 
-bouton = gen_bouton("Recommencer", 5)
+bouton = gen_bouton("Recommencer", 5) # 5: padding
 
 init()
 
 
-while pas_echap():
+while pas_echap(): # fonction main
     JEU_TERMINE = jeu_fini(arrivee, joueur)
     evenements = gerer_evenements()
     if not(JEU_TERMINE):
         case = recuperer_case(joueur,evenements)
         joueur = bouger_joueur(grille,joueur,case)
-        gerer_items(grille,liste_items,inventaire,joueur,evenements)
+        gerer_items(grille,liste_items,joueur,evenements)
     else: 
         if(bouton_clique(bouton,evenements)):
             init()
     affiche_jeu(grille,joueur,arrivee,JEU_TERMINE,liste_items,bouton,images)
-    
